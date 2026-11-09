@@ -34,69 +34,107 @@ public class BotService : IBotService
 
         // Step 1: Request upload URL
 
+        // Step 1: Request upload URL
+
         var requestData = new
         {
             type = "File"
         };
 
-        var response = await client.PostAsJsonAsync(
-            $"https://botapi.rubika.ir/v3/{token}/requestSendFile",
-            requestData
-        );
+        var requestUrl = $"https://botapi.rubika.ir/v3/{token}/requestSendFile";
 
-        var responseBody = await response.Content.ReadAsStringAsync();
+        var response = await client.PostAsJsonAsync(requestUrl, requestData);
 
-        Console.WriteLine("Rubika Response:");
-        Console.WriteLine(responseBody);
+        response.EnsureSuccessStatusCode();
 
-        // بررسی پاسخ روبیکا
-        var result = JsonSerializer.Deserialize<JsonElement>(responseBody);
+        var result = await response.Content.ReadFromJsonAsync<JsonElement>();
 
         if (!result.TryGetProperty("data", out var data) ||
             !data.TryGetProperty("upload_url", out var uploadUrlElement))
         {
-            throw new Exception($"Rubika request failed. Response: {responseBody}");
+            throw new Exception("Failed to get upload URL from Rubika.");
         }
 
-        var uploadUrl = uploadUrlElement.GetString();
+        var uploadUrl = uploadUrlElement.GetString()
+            ?? throw new Exception("Upload URL is empty.");
+        // var responseBody = await response.Content.ReadAsStringAsync();
 
-        // Step 2: Download file as Stream
+        // Console.WriteLine("Rubika Response:");
+        // Console.WriteLine(responseBody);
 
-        using var downloadResponse = await client.GetAsync(
-            fileUrl,
-            HttpCompletionOption.ResponseHeadersRead
-        );
+        // // بررسی پاسخ روبیکا
+        // var result = JsonSerializer.Deserialize<JsonElement>(responseBody);
 
-        downloadResponse.EnsureSuccessStatusCode();
+        // if (!result.TryGetProperty("data", out var data) ||
+        //     !data.TryGetProperty("upload_url", out var uploadUrlElement))
+        // {
+        //     throw new Exception($"Rubika request failed. Response: {responseBody}");
+        // }
 
-        using var stream = await downloadResponse.Content.ReadAsStreamAsync();
+        // var uploadUrl = uploadUrlElement.GetString();
 
-        // Step 3: Upload Stream to Rubika
+        // // Step 2: Download file as Stream
 
-        using var formData = new MultipartFormDataContent();
+        // using var downloadResponse = await client.GetAsync(
+        //     fileUrl,
+        //     HttpCompletionOption.ResponseHeadersRead
+        // );
 
-        using var streamContent = new StreamContent(stream);
+        // downloadResponse.EnsureSuccessStatusCode();
 
-        streamContent.Headers.ContentType =
-            new MediaTypeHeaderValue("application/octet-stream");
+        // using var stream = await downloadResponse.Content.ReadAsStreamAsync();
 
-        formData.Add(streamContent, "file", fileName);
+        // // Step 3: Upload Stream to Rubika
 
-        var uploadResponse = await client.PostAsync(
-            uploadUrl!,
-            formData
-        );
+        // using var formData = new MultipartFormDataContent();
 
-        uploadResponse.EnsureSuccessStatusCode();
+        // using var streamContent = new StreamContent(stream);
+
+        // streamContent.Headers.ContentType =
+        //     new MediaTypeHeaderValue("application/octet-stream");
+
+        // formData.Add(streamContent, "file", fileName);
+
+        // var uploadResponse = await client.PostAsync(
+        //     uploadUrl!,
+        //     formData
+        // );
+
+        // uploadResponse.EnsureSuccessStatusCode();
+
+        // var uploadResult = await uploadResponse.Content
+        //     .ReadFromJsonAsync<JsonElement>();
+
+        // var fileId = uploadResult
+        //     .GetProperty("data")
+        //     .GetProperty("file_id")
+        //     .GetString();
+
+
+        // Step 2: Download file
+        using var stream = await client.GetStreamAsync(fileUrl);
+
+        // Step 3: Upload file to Rubika
+        using var formData = new MultipartFormDataContent
+        {
+            { new StreamContent(stream), "file", fileName }
+        };
+
+        var uploadResponse = await client.PostAsync(uploadUrl, formData);
 
         var uploadResult = await uploadResponse.Content
             .ReadFromJsonAsync<JsonElement>();
 
-        var fileId = uploadResult
-            .GetProperty("data")
-            .GetProperty("file_id")
-            .GetString();
+        uploadResponse.EnsureSuccessStatusCode();
 
+        if (!uploadResult.TryGetProperty("data", out var uploadData) ||
+            !uploadData.TryGetProperty("file_id", out var fileIdElement))
+        {
+            throw new Exception("Failed to upload file to Rubika.");
+        }
+
+        var fileId = fileIdElement.GetString()
+            ?? throw new Exception("File ID is empty.");
         // Step 4: Send file to chat
 
         var sendData = new

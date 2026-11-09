@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RubikaFileSender")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+194372f365b9165499b86bd50e6a3852c87de487")]
 [assembly: System.Reflection.AssemblyProductAttribute("RubikaFileSender")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RubikaFileSender")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

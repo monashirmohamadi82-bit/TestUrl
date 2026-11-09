@@ -36,11 +36,12 @@ public class BotService : IBotService
 
         // Step 1: Request upload URL
 
+        var fileType = GetFileType(fileName);
+
         var requestData = new
         {
-            type = "File"
+            type = fileType
         };
-
         var requestUrl = $"https://botapi.rubika.ir/v3/{token}/requestSendFile";
 
         var response = await client.PostAsJsonAsync(requestUrl, requestData);
